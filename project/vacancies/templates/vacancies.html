@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Журнал-справочник вакансий</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f9f9f9;
+        }
+
+        #filterRow th, #filterRow td {
+            background-color: #e6e6e6;
+        }
+
+        #filterId, select {
+            width: 85%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #filterId {
+            max-width: 50px;
+        }
+
+        input[type="text"]:not(#filterId), select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:not(#filterId):focus, select:focus {
+            border-color: #007bff;
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            display: inline-block;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #f4f4f4;
+        }
+    </style>
+    
+    <h1>Журнал-справочник вакансий</h1>
+    
+    <table id="vacancyTable" border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Имя вакансии</th>
+                <th>Описание вакансии</th>
+                <th>Статус</th>
+                <th>rubr_atrub</th>
+                <th>Название контрагента</th>
+                <th>Файл/ссылка</th>
+                <th>Перефикс</th>
+            </tr>
+            <tr id="filterRow">
+                <th><input type="text" id="filterId" ></th>
+                <th><input type="text" id="filterName"></th>
+                <th><input type="text" id="filterDescription" ></th>
+                <th><select id="filterStatus"><option value=""></option></select></th>
+                <th><select id="filterRubric"><option value=""></option></select></th>
+                <th><input type="text" id="filterCounterName" ></th>
+                <th><input type="text" id="filterFileLink" ></th>
+                <th><input type="text" id="filterPrefix" ></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <div class="pagination" id="paginationContainer"></div>
+
+    <script>
+        $(document).ready(function() {
+            const itemsPerPage = 10; // Количество элементов на странице
+            const maxPaginationBlocks = 10; // Максимальное количество блоков пагинации
+            let currentPage = 1;
+    
+            function fetchData() {
+                $.get("http://127.0.0.1:8000/search/all", function(data) {
+                    if (data.status && data.data.length > 0) {
+                        const tableBody = $("#tableBody");
+                        tableBody.empty(); // Очищаем тело таблицы перед обновлением
+    
+                        data.data.forEach(vacancy => {
+                            tableBody.append(`
+                                <tr>
+                                    <td>${vacancy.id}</td>
+                                    <td>${vacancy.name}</td>
+                                    <td>${vacancy.description}</td>
+                                    <td>${vacancy.status}</td>
+                                    <td>${vacancy.rubr_atrub}</td>
+                                    <td>${vacancy.conter_name}</td>
+                                    <td>${vacancy.file_or_link}</td>
+                                    <td>${vacancy.prefix}</td>
+                                </tr>
+                            `);
+                        });
+    
+                        updatePagination(data.data.length);
+                        updateTable();
+                    } else {
+                        console.log("No data found.");
+                    }
+                });
+            }
+    
+            function updateTable() {
+                const filterId = $("#filterId").val().toLowerCase();
+                const filterName = $("#filterName").val().toLowerCase();
+                const filterDescription = $("#filterDescription").val().toLowerCase();
+                const filterStatus = $("#filterStatus").val().toLowerCase();
+                const filterRubric = $("#filterRubric").val().toLowerCase();
+                const filterCounterName = $("#filterCounterName").val().toLowerCase();
+                const filterFileLink = $("#filterFileLink").val().toLowerCase();
+                const filterPrefix = $("#filterPrefix").val().toLowerCase();
+    
+                $("#vacancyTable tbody tr").filter(function() {
+                    const idMatch = $(this).children("td:nth-child(1)").text().toLowerCase().indexOf(filterId) > -1;
+                    const nameMatch = $(this).children("td:nth-child(2)").text().toLowerCase().indexOf(filterName) > -1;
+                    const descriptionMatch = $(this).children("td:nth-child(3)").text().toLowerCase().indexOf(filterDescription) > -1;
+                    const statusMatch = filterStatus === "" || $(this).children("td:nth-child(4)").text().toLowerCase() === filterStatus;
+                    const rubricMatch = filterRubric === "" || $(this).children("td:nth-child(5)").text().toLowerCase() === filterRubric;
+                    const counterNameMatch = $(this).children("td:nth-child(6)").text().toLowerCase().indexOf(filterCounterName) > -1;
+                    const fileLinkMatch = $(this).children("td:nth-child(7)").text().toLowerCase().indexOf(filterFileLink) > -1;
+                    const prefixMatch = $(this).children("td:nth-child(8)").text().toLowerCase().indexOf(filterPrefix) > -1;
+    
+                    $(this).toggle(
+                        idMatch && nameMatch && descriptionMatch &&
+                        statusMatch && rubricMatch && counterNameMatch &&
+                        fileLinkMatch && prefixMatch
+                    );
+                });
+    
+                updatePagination($("#vacancyTable tbody tr:visible").length);
+            }
+    
+            function updatePagination(totalItems) {
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                const startPage = Math.max(currentPage - Math.floor(maxPaginationBlocks / 2), 1);
+                const endPage = Math.min(startPage + maxPaginationBlocks - 1, totalPages);
+    
+                let paginationHTML = '';
+    
+                if (startPage > 1) {
+                    paginationHTML += `<a href="#" class="pagination-button" onclick="changePage(1)">1</a>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span>...</span>`;
+                    }
+                }
+    
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<a href="#" class="pagination-button" onclick="changePage(${i})">${i}</a>`;
+                }
+    
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span>...</span>`;
+                    }
+                    paginationHTML += `<a href="#" class="pagination-button" onclick="changePage(${totalPages})">${totalPages}</a>`;
+                }
+    
+                $("#paginationContainer").html(paginationHTML);
+            }
+    
+            function changePage(page) {
+                currentPage = page;
+                updateTable();
+            }
+    
+            // Добавляем обработчики событий для изменений в фильтрах
+            $("input, select").on("change keyup", function() {
+                currentPage = 1; // Сбрасываем текущую страницу при изменении фильтров
+                updateTable();
+            });
+    
+            // Инициализация данных при загрузке страницы
+            fetchData();
+        });
+    </script>
+    
+</body>
+</html>

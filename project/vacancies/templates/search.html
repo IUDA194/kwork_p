@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Журнал объявлений</title>
+    <style>
+
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    thead th {
+        background-color: #f9f9f9;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    .filter-input {
+        width: 85%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: border-color 0.3s ease;
+    }
+
+    .filter-input:focus {
+        border-color: #007bff;
+    }
+
+    .clear-button {
+        text-align: center;
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        height: 20px;
+        width: 20px;
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        display: none;
+    }
+
+    .filter-input:not(:placeholder-shown) + .clear-button {
+        display: block;
+    }
+
+    .pagination {
+        margin: 10px;
+        text-align: center;
+    }
+
+    .pagination a {
+        display: inline-block;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        color: #333;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .pagination a:hover {
+        background-color: #f4f4f4;
+    }
+
+    .goto-page-input {
+        width: 60px;
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .pag {
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px 0;
+    }
+
+    .clear-butt input[type="button"] {
+        background-color: #007bff;
+        align-items: center;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 15px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .clear-butt input[type="button"]:hover {
+        background-color: #0056b3;
+    }
+
+    .clear-butt input[type="button"]:focus {
+        outline: none;
+    }
+
+    .namming {
+        margin-left: 10px;
+        font-size: large;
+    }
+
+    #filter-input-id {
+        max-width: 199px;
+    }
+
+    .add-butt {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 15px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        max-width: 80px;
+        text-align: center;
+        margin: 0 auto;
+    }
+
+    .hedder {
+        text-align: center;
+        align-items: center;
+    }
+
+    .hedder_h1 {
+        text-align: center;
+        align-items: center;
+        margin: 0 auto;
+        margin-bottom: 10px;
+    }
+
+    </style>
+    <script>
+        let vacanciesData = []; // To store the fetched data
+        let currentPage = 1;
+        const itemsPerPage = 10; // Adjust the number of items per page as needed
+
+        function fetchData() {
+            // Make GET request to fetch data from the server
+            fetch('http://127.0.0.1:8000/search/all')
+                .then(response => response.json())
+                .then(data => {
+                    vacanciesData = data.data;
+                    updateStatusDropdown(); // Populate status dropdown
+                    updateRubrDropdown(); // Populate rubr_atrub dropdown
+                    updateTable();
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+
+        function updateTable() {
+            const filterInputId = document.getElementById('filter-input-id').value.toLowerCase();
+            const filterInputName = document.getElementById('filter-input-name').value.toLowerCase();
+            const filterInputDescription = document.getElementById('filter-input-description').value.toLowerCase();
+            const filterInputStatus = document.getElementById('filter-input-status').value.toLowerCase();
+            const filterInputRubr = document.getElementById('filter-input-rubr').value.toLowerCase();
+            const filterInputConter = document.getElementById('filter-input-conter').value.toLowerCase();
+            const filterInputFile = document.getElementById('filter-input-file').value.toLowerCase();
+            const filterInputPrefix = document.getElementById('filter-input-prefix').value.toLowerCase();
+
+            const filteredData = vacanciesData.filter(vacancy => {
+                const idMatch = String(vacancy.id).toLowerCase().includes(filterInputId);
+                const nameMatch = String(vacancy.name).toLowerCase().includes(filterInputName);
+                const descriptionMatch = String(vacancy.description).toLowerCase().includes(filterInputDescription);
+                const statusMatch = String(vacancy.status).toLowerCase().includes(filterInputStatus);
+                const rubrMatch = String(vacancy.rubr_atrub).toLowerCase().includes(filterInputRubr);
+                const conterMatch = String(vacancy.conter_name).toLowerCase().includes(filterInputConter);
+                const fileMatch = String(vacancy.file_or_link).toLowerCase().includes(filterInputFile);
+                const prefixMatch = String(vacancy.prefix).toLowerCase().includes(filterInputPrefix);
+
+                return (
+                    idMatch && nameMatch && descriptionMatch && statusMatch &&
+                    rubrMatch && conterMatch && fileMatch && prefixMatch
+                );
+            });
+
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = ''; // Clear previous data
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+
+            filteredData.slice(startIndex, endIndex).forEach(vacancy => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', vacancy.id);
+                row.innerHTML = `
+                    <td>${vacancy.id}</td>
+                    <td contenteditable="false">${vacancy.name}</td>
+                    <td contenteditable="false">${vacancy.description}</td>
+                    <td contenteditable="false">${vacancy.status}</td>
+                    <td contenteditable="false">${vacancy.rubr_atrub}</td>
+                    <td contenteditable="false">${vacancy.conter_name}</td>
+                    <td contenteditable="false">${vacancy.file_or_link}</td>
+                    <td contenteditable="false">${vacancy.prefix}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            updatePagination(filteredData.length);
+        }
+
+
+
+        function saveChanges(id) {
+            const editedRow = document.querySelector(`tr[data-id="${id}"]`);
+            const name = editedRow.querySelector('td:nth-child(2)').textContent;
+            const source = editedRow.querySelector('td:nth-child(3)').textContent;
+            const date = editedRow.querySelector('td:nth-child(4)').textContent;
+
+            // Make GET request to save the edited data
+            fetch(`http://127.0.0.1:8000/vacancies/edit_new?id=${id}&name=${name}&date=${date}&source=${source}`)
+                .then(response => {
+                    if (response.status === 200) {
+                        // If successful, fetch data again to update the table
+                        fetchData();
+                    }
+                })
+                .catch(error => console.error('Error saving changes:', error));
+        }
+
+        function deleteVacancy(id) {
+            // Make GET request to delete the vacancy
+            fetch(`http://127.0.0.1:8000/vacancies/delete?id=${id}`)
+                .then(response => {
+                    if (response.status === 200) {
+                        // If successful, fetch data again to update the table
+                        fetchData();
+                    }
+                })
+                .catch(error => console.error('Error deleting vacancy:', error));
+        }
+
+        function clearAllFilters() {
+            document.getElementById('filter-input-id').value = '';
+            document.getElementById('filter-input-name').value = '';
+            document.getElementById('filter-input-description').value = '';
+            document.getElementById('filter-input-status').value = '';
+            document.getElementById('filter-input-rubr').value = '';
+            document.getElementById('filter-input-conter').value = '';
+            document.getElementById('filter-input-file').value = '';
+            document.getElementById('filter-input-prefix').value = '';
+            updateTable();
+        }
+
+
+        function collectRubrOptions() {
+            const rubrOptions = new Set();
+            for (const vacancy of vacanciesData) {
+                rubrOptions.add(vacancy.rubr_atrub);
+            }
+            return Array.from(rubrOptions);
+        }
+
+        function updateRubrDropdown() {
+            const rubrDropdown = document.getElementById('filter-input-rubr');
+            rubrDropdown.innerHTML = '<option value="" selected>Выберите что-то</option>';
+            
+            const rubrOptions = collectRubrOptions();
+            for (const option of rubrOptions) {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                rubrDropdown.appendChild(optionElement);
+            }
+        }
+
+        function updatePagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            let paginationHTML = '<div class="pagination">';
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `<a href="#" class="pagination-button" onclick="changePage(${i})">${i}</a>`;
+            }
+            paginationHTML += '</div>';
+
+            const paginationContainer = document.getElementById('pagination-container');
+            paginationContainer.innerHTML = paginationHTML;
+            const paginationContainerTop = document.getElementById('pagination-container-top');
+            paginationContainerTop.innerHTML = paginationHTML;
+        }
+
+        function clearInput(inputId) {
+            document.getElementById(inputId).value = '';
+            updateTable();
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            updateTable();
+        }
+
+        function gotoPageTop() {
+            const input = document.getElementById('goto-page-input-top');
+            currentPage = parseInt(input.value);
+            updateTable();
+        }
+
+        function gotoPageBot() {
+            const input = document.getElementById('goto-page-input-bot');
+            currentPage = parseInt(input.value);
+            updateTable();
+        }
+
+        function collectStatusOptions() {
+            const statusOptions = new Set();
+            for (const vacancy of vacanciesData) {
+                statusOptions.add(vacancy.status);
+            }
+            return Array.from(statusOptions);
+        }
+
+        function updateStatusDropdown() {
+            const statusDropdown = document.getElementById('filter-input-status');
+            statusDropdown.innerHTML = '<option value="" selected>Выберите статус</option>';
+
+            const statusOptions = collectStatusOptions();
+            for (const option of statusOptions) {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                statusDropdown.appendChild(optionElement);
+            }
+        }
+
+        function add() {
+            let id = prompt("Введите айди вакансии:")
+            let name = prompt("Введите имя вакансии:")
+            let description = prompt("Введите описание вакансии:")
+            let status = prompt("Введите статус вакансии")
+            let rubr_atrub = prompt("Введите rubr_atrub вакансии:")
+            let conter_name = prompt("Введите conter_name вакансии:")
+            let file_or_link = prompt("Введите file_or_link вавкансии:")
+            let prefix = prompt("Введите префикс вакансии:")
+
+            var request = new XMLHttpRequest();
+            request.open("GET", `http://127.0.0.1:8000/vacancies/create?id=${id}&name=${name}&description=${description}&status=${status}&rubr_atrub=${rubr_atrub}&conter_name=${conter_name}&file_or_link=${file_or_link}&prefix=${prefix}`);
+            request.onload = function (){
+                let data = JSON.parse(request.responseText);
+                if (data['status']) {
+                    alert("Добавление прошло успешно")
+                } else {
+                    alert(data['text'])
+                }
+
+            }
+            request.send(null);
+            updateTable(); // Initial table update
+
+            }
+
+            window.onload = function() {
+                fetchData();
+                updateStatusDropdown(); // Initialize the status dropdown
+                updateTable();
+            };
+    </script>
+</head>
+<body>
+    <div class="headder">
+        <h1 class="hedder_h1">Журнал объявлений</h1>
+    </div>
+    <div class="pag">
+        <div class="pag-inp"><input type="number" class="goto-page-input" id="goto-page-input-top" placeholder="Номер страницы" min="1" oninput="gotoPageTop()"></div>
+        <div class="pagination" id="pagination-container-top"></div>
+        <div class="clear-butt"><input type="button" value="Очистить" placeholder="Введите номкр страницы" onclick="clearAllFilters()"></div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    <span class="namming">ID</span>
+                    <input type="text" class="filter-input" id="filter-input-id" oninput="updateTable()" placeholder="Сортировка по айди ">
+                    <button class="clear-button" onclick="clearInput('filter-input-id')"></button>
+                </th>
+                <th>
+                    <span class="namming">Имя</span>
+                    <input type="text" class="filter-input" id="filter-input-name" oninput="updateTable()" placeholder="Сортировка по имени">
+                    <button class="clear-button" onclick="clearInput('filter-input-name')"></button>
+                </th>
+                <th>
+                    <span class="namming">Описание</span>
+                    <input type="text" class="filter-input" id="filter-input-description" oninput="updateTable()" placeholder="Сортировка по описанию">
+                    <button class="clear-button" onclick="clearInput('filter-input-description')"></button>
+                </th>
+                <th>
+                    <span class="namming">Статус</span>
+                    <select class="filter-input" id="filter-input-status" onchange="updateTable()"></select>
+                    <button class="clear-button" onclick="clearInput('filter-input-status')"></button>
+                </th>
+                <th>
+                    <span class="namming">Что-то</span>
+                    <select class="filter-input" id="filter-input-rubr" onchange="updateTable()"></select>
+                    <button class="clear-button" onclick="clearInput('filter-input-rubr')"></button>
+                </th>                
+                <th>
+                    <span class="namming">Название</span>
+                    <input type="text" class="filter-input" id="filter-input-conter" oninput="updateTable()" placeholder="Сортировка по Названию">
+                    <button class="clear-button" onclick="clearInput('filter-input-conter')"></button>
+                </th>
+                <th>
+                    <span class="namming">Файл/Ссылка</span>
+                    <input type="text" class="filter-input" id="filter-input-file" oninput="updateTable()" placeholder="Сортировка по Файлу/Ссылке">
+                    <button class="clear-button" onclick="clearInput('filter-input-file')"></button>
+                </th>
+                <th>
+                    <span class="namming">Префикс</span>
+                    <input type="text" class="filter-input" id="filter-input-prefix" oninput="updateTable()" placeholder="Сортировка по Префиксу">
+                    <button class="clear-button" onclick="clearInput('filter-input-prefix')"></button>
+                </th>
+                
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <!-- Table rows will be populated here -->
+        </tbody>
+    </table>
+
+    <div class="pag">
+        <div class="pag-inp"><input type="number" class="goto-page-input" id="goto-page-input-bot" min="1" placeholder="Номер страницы" oninput="gotoPageBot()"></div>
+        <div class="pagination" id="pagination-container"></div>
+        <div class="clear-butt"><input type="button" value="Очистить" placeholder="Введите номкр страницы" onclick="clearAllFilters()"></div>
+    </div>
+
+</body>
+</html>
