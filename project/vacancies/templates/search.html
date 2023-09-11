@@ -168,7 +168,7 @@
 
         function fetchData() {
             // Make GET request to fetch data from the server
-            fetch('http://127.0.0.1:8000/search/all')
+            fetch('http://185.107.237.179:8000/search/all')
                 .then(response => response.json())
                 .then(data => {
                     vacanciesData = data.data;
@@ -240,7 +240,7 @@
             const date = editedRow.querySelector('td:nth-child(4)').textContent;
 
             // Make GET request to save the edited data
-            fetch(`http://127.0.0.1:8000/vacancies/edit_new?id=${id}&name=${name}&date=${date}&source=${source}`)
+            fetch(`http://185.107.237.179:8000/vacancies/edit_new?id=${id}&name=${name}&date=${date}&source=${source}`)
                 .then(response => {
                     if (response.status === 200) {
                         // If successful, fetch data again to update the table
@@ -252,7 +252,7 @@
 
         function deleteVacancy(id) {
             // Make GET request to delete the vacancy
-            fetch(`http://127.0.0.1:8000/vacancies/delete?id=${id}`)
+            fetch(`http://185.107.237.179:8000/vacancies/delete?id=${id}`)
                 .then(response => {
                     if (response.status === 200) {
                         // If successful, fetch data again to update the table
@@ -365,7 +365,7 @@
             let prefix = prompt("Введите префикс вакансии:")
 
             var request = new XMLHttpRequest();
-            request.open("GET", `http://127.0.0.1:8000/vacancies/create?id=${id}&name=${name}&description=${description}&status=${status}&rubr_atrub=${rubr_atrub}&conter_name=${conter_name}&file_or_link=${file_or_link}&prefix=${prefix}`);
+            request.open("GET", `http://185.107.237.179:8000/vacancies/create?id=${id}&name=${name}&description=${description}&status=${status}&rubr_atrub=${rubr_atrub}&conter_name=${conter_name}&file_or_link=${file_or_link}&prefix=${prefix}`);
             request.onload = function (){
                 let data = JSON.parse(request.responseText);
                 if (data['status']) {
